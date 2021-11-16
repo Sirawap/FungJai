@@ -22,7 +22,7 @@ import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import InputBase from '@mui/material/InputBase';
 import FormControl from '@mui/material/FormControl';
-import { bgcolor, borderRadius, display, fontSize, width } from '@mui/system';
+import { bgcolor, borderRadius, display, fontSize, height, width } from '@mui/system';
 import { CleaningServicesSharp } from '@mui/icons-material';
 
 
@@ -43,6 +43,12 @@ const useStyles = makeStyles((theme) => ({
   },
   block:{
     display: `block`
+  },
+  end:{
+    justifyContent: `end`
+  },
+  fixed:{
+    position: `absolute`
   },
   textAlignCenter:{
     textAlign: `center`
@@ -107,7 +113,8 @@ const useStyles = makeStyles((theme) => ({
   groupMedia:{
     display: `block`,
     verticalAlign: `middle`,
-    padding: `10px`
+    padding: `1rem`,
+    width: `4.5rem`
   },
   mediaButton2:{
     width: `3rem`,
@@ -129,15 +136,23 @@ const useStyles = makeStyles((theme) => ({
     padding: `0.25rem 0.25rem 0.25rem 0.25rem`
   },
   footer:{
-
-  }
+    position: `fixed`,
+    bottom: `0`,
+    width: `100%`,
+    background: `#000000`
+  },
+  middleRight:{
+    position: `fixed`,
+    top: `45%`,
+    right: `0%`
+  },
 }));
 // --------------------------------------------------------
-// TODO : Fix footer
-// TODO : side multi media
-// TODO : add comment with enter
-// TODO : handler and hook
-// TODO : tidy the code
+// TODO : Fix footer                  check
+// TODO : side multi media            uncheck
+// TODO : add comment with enter      uncheck
+// TODO : handler and hook            uncheck
+// TODO : tidy the code               uncheck
 // --------------------------------------------------------
 const WallPaper = styled('div')({
   position: 'absolute',
@@ -168,6 +183,11 @@ const Spacing = styled('div')(() => ({
   width: `1rem`
 }));
 
+const FooterPlaceholder = styled('div')(() => ({
+  width: `100%`,
+  height: `10rem`
+}));
+
 const CommentInput = styled(InputBase)(({ theme }) => ({
   '& .MuiInputBase-input': {
     borderRadius: 20,
@@ -194,8 +214,15 @@ export default function Home({ live }) {
 	// Initial setup
 	const classes = useStyles();
 
-	// Comment state
+	// All comment state
 	const [comments, setComment] = useState(live.comments);
+
+  // comment state
+  const [_comment,setUserComment] = useState('');
+
+  // uploading
+  const [uploading, setUploading] = useState(false);
+  const [scroll,setScroll] = useState(false);
 
 
 	// Check that data is loaded correctly
@@ -215,8 +242,45 @@ export default function Home({ live }) {
     console.log('closing live page')
   }
 
+  const commentHandler =(event) => {
+    // console.log(event.target.value)
+    setUserComment(event.target.value)
+  }
 
-  console.log(live)
+  const shareHandler=()=>{
+    if(_comment == '' || _comment == null){
+      console.log('nothing to upload')
+      return 'nothing to upload'
+    }
+    
+    if(_comment != '' || _comment != null){
+      comments.push({
+        sbName: 'sb', 
+        sbComment: _comment
+      }) 
+      console.log('upload successful')
+    }
+    // clear the comment input
+    setUserComment('')
+    document.getElementById('comment_input').value = ''
+    // set state
+    setComment(comments)
+    setUploading(true)
+    uploadingTimer()
+  }
+
+  async function uploadingTimer(){
+    setTimeout(() => {
+      setUploading(false)
+      scrollTimer()
+    }, 2000)
+  }
+
+  async function scrollTimer(){
+    setScroll(true)
+    setTimeout(() => setScroll(false), 1000)
+  }
+
 	return (
 		// <Layout id={id}>
       // <div>page</div>
@@ -299,18 +363,33 @@ export default function Home({ live }) {
             })}
           </Grid>
 
-          {/* media interactible */}
+          {/* UNFIXED side bar media button  ***commenting*** */}
           <Grid item xs={2} className={`${classes.flex} ${classes.alignCenter}`}>
             <div className={classes.groupMedia }>
-              <img alt='mic' src='/Component 207.png' className={classes.mediaButton}/>
-              <img alt='playlist' src='/song-queue-list.png' className={classes.mediaButton}/>
+              {/* uncomment for unfixed side media button */}
+              {/* <img alt='mic' src='/Component 207.png' className={classes.mediaButton}/>
+              <img alt='playlist' src='/song-queue-list.png' className={classes.mediaButton}/> */}
             </div>
           </Grid>
         </Grid>
+        {/* FIXED sidebar media button */}
+        <div className={`${classes.front} ${classes.middleRight}`} >
+          <div className={classes.groupMedia}>
+            <img alt='mic' src='/Component 207.png' className={classes.mediaButton}/>
+            <img alt='playlist' src='/song-queue-list.png' className={classes.mediaButton}/>
+          </div>
+        </div>
       </div>
       
+      {/* Footer placeholder */}
+      <FooterPlaceholder />
+
       {/*----------------- Footer -----------------*/}
-      <div>
+      <div className={classes.footer}>
+        <div className={`${classes.flex} ${classes.justifyCenter}`}>
+          {uploading === true ? 'uploading ...' : ''}
+          {scroll === true ? 'please scroll down' : ''}
+        </div>
         {/* playing music */}
         <div className={classes.currentMusicRowMargin}>
           <Grid container spacing={1} className={classes.currentMusic} >
@@ -333,7 +412,7 @@ export default function Home({ live }) {
         {/* comment row */}
         <Grid container spacing={0} className={classes.commnetRowMargin}>
           {/* comment input */}
-          <Grid item xs={9}>
+          <Grid item xs={9}>  
             <Box
               component="form"
               noValidate
@@ -344,13 +423,22 @@ export default function Home({ live }) {
               }}
             >
               <FormControl variant="standard">
-                <CommentInput placeholder='แสดงความคิดเห็น' id="bootstrap-input" />
+                <CommentInput 
+                  placeholder='แสดงความคิดเห็น' 
+                  id="comment_input"
+                  onChange={commentHandler}
+                />
               </FormControl>
             </Box>
           </Grid>
           {/* media button */}
           <Grid item xs={3} className={`${classes.spaceAround} ${classes.flex}`}>
-            <img alt='upload image' src='/share.svg' className={classes.mediaButton}/>
+            <img 
+              alt='share comment image' 
+              src='/share.svg' 
+              className={classes.mediaButton}
+              onClick={shareHandler}
+            />
             <img alt='gift image' src='/like.png' className={classes.mediaButton}/>
           </Grid>
         </Grid>
